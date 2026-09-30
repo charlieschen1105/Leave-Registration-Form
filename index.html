@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>03班 · 学生请假登记与汇总</title>
+<style>
+  :root{
+    --primary:#2563eb; --primary-dark:#1d4ed8; --bg:#f4f6fb;
+    --card:#fff; --text:#1e293b; --muted:#64748b; --border:#e2e8f0;
+    --sick:#ef4444; --personal:#f59e0b; --other:#8b5cf6;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1420px;margin:0 auto;padding:20px}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{
+    width:52px;height:52px;border-radius:14px;flex:none;
+    background:linear-gradient(135deg,#2563eb,#60a5fa);color:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:800;letter-spacing:.5px;
+    box-shadow:0 6px 16px rgba(37,99,235,.35);
+  }
+  .brand h1{font-size:20px;font-weight:700;letter-spacing:.3px}
+  .brand .sub{font-size:12.5px;color:var(--muted)}
+  .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+  /* ---------- 按钮 ---------- */
+  .btn{
+    border:none;border-radius:9px;padding:9px 16px;font-size:13.5px;font-weight:600;
+    cursor:pointer;transition:.18s;font-family:inherit;background:#fff;color:var(--text);
+    border:1px solid var(--border);
+  }
+  .btn:hover{background:#f8fafc;border-color:#cbd5e1}
+  .btn.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  .btn.primary:hover{background:var(--primary-dark);border-color:var(--primary-dark)}
+  .btn.ghost{background:#fff}
+  .btn.sm{padding:6px 12px;font-size:12.5px}
+  .mini{
+    border:1px solid var(--border);background:#fff;border-radius:7px;
+    padding:3px 10px;font-size:12.5px;cursor:pointer;font-family:inherit;color:var(--muted);
+    transition:.15s;
+  }
+  .mini:hover{color:var(--primary);border-color:#bfdbfe;background:#eff6ff}
+  .mini.danger:hover{color:#dc2626;border-color:#fecaca;background:#fef2f2}
+
+  /* ---------- 统计卡 ---------- */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:18px}
+  .stat{
+    background:var(--card);border-radius:14px;padding:16px 18px;
+    box-shadow:0 1px 3px rgba(15,23,42,.06);border:1px solid #eef2f7;position:relative;overflow:hidden;
+  }
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--primary)}
+  .stat.s2::before{background:#f59e0b}
+  .stat.s3::before{background:#10b981}
+  .stat.s4::before{background:#8b5cf6}
+  .stat-label{font-size:12.5px;color:var(--muted);font-weight:500}
+  .stat-value{font-size:26px;font-weight:800;letter-spacing:-.5px;margin-top:2px;color:#0f172a}
+  .stat-unit{font-size:12px;color:#94a3b8;font-weight:500}
+
+  /* ---------- 布局 ---------- */
+  .layout{display:grid;grid-template-columns:minmax(320px,390px) 1fr;gap:18px;align-items:start}
+  @media(max-width:1040px){.layout{grid-template-columns:1fr}}
+
+  .card{
+    background:var(--card);border-radius:16px;border:1px solid #eef2f7;
+    box-shadow:0 1px 3px rgba(15,23,42,.06);padding:20px;
+  }
+  .card-title{font-size:15.5px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+
+  /* ---------- 表单 ---------- */
+  .field{margin-bottom:14px;position:relative}
+  .field>label{display:block;font-size:12.5px;font-weight:600;color:#475569;margin-bottom:6px}
+  .req{color:#ef4444}
+  input[type=text],input[type=tel],input[type=date],input[type=datetime-local],textarea,select{
+    width:100%;border:1px solid var(--border);border-radius:9px;padding:9px 11px;
+    font-size:13.5px;font-family:inherit;color:var(--text);background:#fff;transition:.15s;outline:none;
+  }
+  input:focus,textarea:focus,select:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+  textarea{resize:vertical;min-height:56px;line-height:1.5}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media(max-width:520px){.grid2{grid-template-columns:1fr}}
+
+  /* 学生选择器 */
+  .combo{position:relative}
+  .combo-panel{
+    position:absolute;top:calc(100% + 4px);left:0;right:0;background:#fff;
+    border:1px solid var(--border);border-radius:11px;box-shadow:0 10px 30px rgba(15,23,42,.12);
+    max-height:230px;overflow-y:auto;z-index:50;display:none;padding:5px;
+  }
+  .combo-panel.open{display:block}
+  .combo-item{
+    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;font-size:13.5px;
+  }
+  .combo-item:hover,.combo-item.hl{background:#eff6ff}
+  .c-no{font-size:12px;color:#94a3b8;font-variant-numeric:tabular-nums;width:24px}
+  .c-name{font-weight:600;flex:1}
+  .c-gender{font-size:11.5px;padding:1px 7px;border-radius:20px}
+  .c-gender.m{background:#e0f2fe;color:#0369a1}
+  .c-gender.f{background:#fce7f3;color:#be185d}
+  .combo-empty{padding:14px;text-align:center;color:var(--muted);font-size:13px}
+  .chosen{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;color:var(--primary);font-weight:600;min-height:20px}
+  .chosen .tag{background:#eff6ff;border:1px solid #bfdbfe;padding:3px 10px;border-radius:20px}
+
+  /* 类型 chips */
+  .chips{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{cursor:pointer;position:relative}
+  .chip input{position:absolute;opacity:0;pointer-events:none}
+  .chip span{
+    display:inline-block;padding:7px 15px;border-radius:9px;border:1px solid var(--border);
+    font-size:13px;font-weight:600;color:#64748b;background:#fff;transition:.15s;
+  }
+  .chip:hover span{border-color:#cbd5e1}
+  .chip input:checked + span{background:#eff6ff;border-color:#93c5fd;color:var(--primary)}
+  .chip.c-sick input:checked + span{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+  .chip.c-personal input:checked + span{background:#fffbeb;border-color:#fde68a;color:#b45309}
+  .chip.c-other input:checked + span{background:#f5f3ff;border-color:#ddd6fe;color:#7c3aed}
+
+  .form-actions{display:flex;gap:10px;margin-top:18px}
+  .form-actions .btn{flex:1}
+
+  /* ---------- 标签页 ---------- */
+  .tabs{display:flex;gap:4px;border-bottom:2px solid #f1f5f9;margin-bottom:14px;overflow-x:auto}
+  .tab{
+    border:none;background:none;padding:10px 15px;font-size:13.5px;font-weight:600;color:var(--muted);
+    cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;margin-bottom:-2px;
+    white-space:nowrap;transition:.15s;
+  }
+  .tab:hover{color:var(--primary)}
+  .tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+
+  /* ---------- 筛选 ---------- */
+  .filters{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .preset-group{display:flex;background:#f1f5f9;border-radius:10px;padding:3px;gap:2px}
+  .preset-group button{
+    border:none;background:none;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;
+    color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;
+  }
+  .preset-group button.active{background:#fff;color:var(--primary);box-shadow:0 1px 3px rgba(15,23,42,.1)}
+  .filters input[type=date]{width:auto;padding:6px 9px;font-size:13px}
+  .filters input[type=text]{width:auto;flex:1;min-width:130px;padding:6px 11px;font-size:13px}
+  .sep{color:#cbd5e1}
+
+  /* ---------- 表格 ---------- */
+  .table-wrap{overflow-x:auto;border:1px solid #f1f5f9;border-radius:12px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+  th{
+    background:#f8fafc;color:#64748b;font-weight:600;text-align:left;
+    padding:11px 13px;border-bottom:1px solid #e8eef6;white-space:nowrap;font-size:12.5px;
+  }
+  td{padding:11px 13px;border-bottom:1px solid #f4f7fb;vertical-align:top}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#fbfdff}
+  .reason-cell{max-width:260px;min-width:160px}
+  .note{font-size:12px;color:#94a3b8;margin-top:2px}
+  .muted{color:#cbd5e1}
+  .ops{white-space:nowrap;display:flex;gap:6px}
+  tfoot td{background:#f8fafc;font-weight:700;border-top:2px solid #e8eef6}
+
+  .badge{display:inline-block;padding:2px 10px;border-radius:20px;font-size:12px;font-weight:600;white-space:nowrap}
+  .badge.病假{background:#fef2f2;color:#dc2626}
+  .badge.事假{background:#fffbeb;color:#b45309}
+  .badge.其他{background:#f5f3ff;color:#7c3aed}
+
+  .empty{padding:60px 20px;text-align:center;color:#94a3b8}
+  .empty .ico{font-size:40px;margin-bottom:10px;opacity:.5}
+
+  /* ---------- 弹窗 ---------- */
+  .mask{
+    position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;
+    align-items:center;justify-content:center;z-index:200;padding:20px;backdrop-filter:blur(2px);
+  }
+  .mask.open{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(15,23,42,.3)}
+  .modal h3{font-size:16px;margin-bottom:6px}
+  .modal p.hint{font-size:12.5px;color:var(--muted);margin-bottom:16px}
+  .modal .form-actions{margin-top:20px}
+
+  /* ---------- 打印 ---------- */
+  @media print{
+    body{background:#fff}
+    .top-actions,.form-card,.filters,.tabs,.ops,.stats{display:none!important}
+    .layout{display:block}
+    .card{box-shadow:none;border:none;padding:0}
+    .wrap{padding:0;max-width:none}
+    table{min-width:0;font-size:12px}
+    th,td{padding:6px 8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 顶栏 -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo">03</div>
+      <div>
+        <h1>学生请假登记与汇总</h1>
+        <p class="sub">03班 · 每日请假记录 · 周 / 月 / 学期自动汇总</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button class="btn ghost" id="btnExport">⬇ 导出 CSV</button>
+      <button class="btn ghost" id="btnPrint">🖨 打印</button>
+      <button class="btn ghost" id="btnSettings">⚙ 学期设置</button>
+    </div>
+  </div>
+
+  <!-- 统计 -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">今日请假</div>
+      <div class="stat-value" id="statToday">0</div>
+      <div class="stat-unit">人次</div>
+    </div>
+    <div class="stat s2">
+      <div class="stat-label">本周请假</div>
+      <div class="stat-value" id="statWeek">0</div>
+      <div class="stat-unit">人次</div>
+    </div>
+    <div class="stat s3">
+      <div class="stat-label">本月请假</div>
+      <div class="stat-value" id="statMonth">0</div>
+      <div class="stat-unit">人次</div>
+    </div>
+    <div class="stat s4">
+      <div class="stat-label">本学期请假</div>
+      <div class="stat-value" id="statTerm">0</div>
+      <div class="stat-unit">人次</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- 表单 -->
+    <section class="card form-card">
+      <h2 class="card-title">✏️ <span id="formTitle">新增请假登记</span></h2>
+
+      <div class="field">
+        <label>学生 <span class="req">*</span></label>
+        <div class="combo">
+          <input type="text" id="studentSearch" placeholder="输入姓名或学号搜索…" autocomplete="off">
+          <div class="combo-panel" id="studentPanel"></div>
+        </div>
+        <div class="chosen" id="chosenStudent"></div>
+      </div>
+
+      <div class="field">
+        <label>请假类型</label>
+        <div class="chips">
+          <label class="chip c-sick"><input type="radio" name="ltype" value="病假" checked><span>病假</span></label>
+          <label class="chip c-personal"><input type="radio" name="ltype" value="事假"><span>事假</span></label>
+          <label class="chip c-other"><input type="radio" name="ltype" value="其他"><span>其他</span></label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>请假事由 <span class="req">*</span></label>
+        <textarea id="reason" rows="2" placeholder="如：感冒发烧，需回家休息"></textarea>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>请假开始时间 <span class="req">*</span></label>
+          <input type="datetime-local" id="startTime">
+        </div>
+        <div class="field">
+          <label>预计返校时间</label>
+          <input type="datetime-local" id="endTime">
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>来接的人</label>
+          <input type="text" id="picker" placeholder="如：父亲 徐某某">
+        </div>
+        <div class="field">
+          <label>联系电话</label>
+          <input type="tel" id="phone" placeholder="如：138****0000">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>备注</label>
+        <input type="text" id="note" placeholder="选填">
+      </div>
+
+      <div class="form-actions">
+        <button class="btn primary" id="btnSave">保存登记</button>
+        <button class="btn ghost" id="btnReset">重置</button>
+      </div>
+    </section>
+
+    <!-- 列表 / 汇总 -->
+    <section class="card list-card">
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-tab="detail">请假明细</button>
+        <button class="tab" data-tab="student">按学生汇总</button>
+        <button class="tab" data-tab="week">按周汇总</button>
+        <button class="tab" data-tab="month">按月汇总</button>
+        <button class="tab" data-tab="term">按学期汇总</button>
+      </div>
+
+      <div class="filters">
+        <div class="preset-group" id="presets">
+          <button data-preset="all" class="active">全部</button>
+          <button data-preset="week">本周</button>
+          <button data-preset="month">本月</button>
+          <button data-preset="term">本学期</button>
+        </div>
+        <input type="date" id="fStart" title="开始日期">
+        <span class="sep">~</span>
+        <input type="date" id="fEnd" title="结束日期">
+        <input type="text" id="fKeyword" placeholder="搜索姓名 / 事由…">
+        <button class="btn ghost sm" id="btnClearFilter">清空</button>
+      </div>
+
+      <div id="panel"></div>
+    </section>
+  </div>
+</div>
+
+<!-- 设置弹窗 -->
+<div class="mask" id="settingsMask">
+  <div class="modal">
+    <h3>学期设置</h3>
+    <p class="hint">用于「本学期」统计与按学期汇总，设置会保存在本机浏览器中。</p>
+    <div class="field">
+      <label>学期名称</label>
+      <input type="text" id="setTermName">
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>学期开始</label>
+        <input type="date" id="setTermStart">
+      </div>
+      <div class="field">
+        <label>学期结束</label>
+        <input type="date" id="setTermEnd">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn primary" id="btnSaveSettings">保存</button>
+      <button class="btn ghost" id="btnCloseSettings">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   学生名单（来自工作簿1.xlsx / Sheet1）
+   ========================================================= */
+const STUDENTS = [
+  {no:'01',name:'徐浩添',gender:'男'},
+  {no:'02',name:'林雨纯',gender:'女'},
+  {no:'03',name:'施金彤',gender:'女'},
+  {no:'04',name:'王华麟',gender:'男'},
+  {no:'05',name:'朱宇航',gender:'男'},
+  {no:'06',name:'张慕青',gender:'女'},
+  {no:'07',name:'张雪林',gender:'女'},
+  {no:'08',name:'程莹',  gender:'女'},
+  {no:'09',name:'陈南屹',gender:'男'},
+  {no:'10',name:'杨紫蔓',gender:'女'},
+  {no:'11',name:'黄功凯',gender:'男'},
+  {no:'12',name:'李佳佳',gender:'女'},
+  {no:'13',name:'王晨蒙',gender:'女'},
+  {no:'14',name:'叶智诚',gender:'男'},
+  {no:'15',name:'石雅涵',gender:'女'},
+  {no:'16',name:'王梓翔',gender:'男'},
+  {no:'17',name:'王皓月',gender:'女'},
+  {no:'18',name:'赖思恺',gender:'男'},
+  {no:'19',name:'王子龙',gender:'男'},
+  {no:'20',name:'包黔冉',gender:'女'},
+  {no:'21',name:'谢泽洋',gender:'男'},
+  {no:'22',name:'周熙晨',gender:'女'},
+  {no:'23',name:'陈浩楠',gender:'男'},
+  {no:'24',name:'胡泽皓',gender:'男'},
+  {no:'25',name:'金栩如',gender:'女'},
+  {no:'26',name:'蒋琴玉',gender:'女'},
+  {no:'27',name:'胡俊驰',gender:'男'},
+  {no:'28',name:'童鑫',  gender:'男'},
+  {no:'29',name:'王诚裕',gender:'男'},
+  {no:'30',name:'邵光宗',gender:'男'},
+  {no:'31',name:'施欣晨',gender:'女'},
+  {no:'32',name:'唐静雅',gender:'女'},
+  {no:'33',name:'徐承睿',gender:'男'},
+  {no:'34',name:'李可欣',gender:'女'},
+  {no:'35',name:'邵思辰',gender:'女'},
+  {no:'36',name:'王贤哲',gender:'男'},
+  {no:'37',name:'吴嘉豪',gender:'男'},
+  {no:'39',name:'奚圣博',gender:'男'},
+  {no:'41',name:'朱剑羽',gender:'男'},
+  {no:'42',name:'叶宇文',gender:'男'}
+];
+
+const REC_KEY = 'class03_leave_records_v1';
+const SET_KEY = 'class03_leave_settings_v1';
+
+/* =========================================================
+   工具函数
+   ========================================================= */
+const $  = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,'0');
+
+function fmtDate(d){ return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+function fmtDT(v){
+  if(!v) return '';
+  const d = new Date(v);
+  if(isNaN(d)) return v;
+  return fmtDate(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function nowLocal(){
+  const d = new Date();
+  return fmtDate(d)+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+function weekStart(d){
+  const t = new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const day = (t.getDay()+6)%7;      // 周一为一周开始
+  t.setDate(t.getDate()-day);
+  return t;
+}
+function weekEnd(d){
+  const t = weekStart(d); t.setDate(t.getDate()+6); return t;
+}
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));
+  const dn = t.getUTCDay()||7;
+  t.setUTCDate(t.getUTCDate()+4-dn);
+  const ys = new Date(Date.UTC(t.getUTCFullYear(),0,1));
+  return Math.ceil(((t-ys)/86400000+1)/7);
+}
+function durHours(r){
+  if(!r.end) return 0;
+  const a = new Date(r.start), b = new Date(r.end);
+  if(isNaN(a)||isNaN(b)||b<=a) return 0;
+  return (b-a)/3600000;
+}
+function durText(r){
+  const h = durHours(r);
+  if(!r.end) return '<span class="muted">进行中</span>';
+  if(h<=0)  return '<span class="muted">—</span>';
+  if(h<1)   return Math.round(h*60)+' 分钟';
+  if(h<24)  return h.toFixed(1)+' 小时';
+  return (h/24).toFixed(1)+' 天';
+}
+function sumHours(list){
+  const h = list.reduce((s,r)=>s+durHours(r),0);
+  return h<24 ? h.toFixed(1)+' 小时' : (h/24).toFixed(1)+' 天（'+h.toFixed(1)+' 小时）';
+}
+function esc(s){
+  return String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function uid(){
+  return 'r'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+}
+
+/* =========================================================
+   状态
+   ========================================================= */
+let records = [];
+let settings = {};
+let filter  = { start:'', end:'', keyword:'', preset:'all' };
+let editingId = null;
+let selectedStudent = null;
+let activeTab = 'detail';
+
+/* ---------- 存储 ---------- */
+function loadRecords(){
+  try{ records = JSON.parse(localStorage.getItem(REC_KEY)) || []; }
+  catch(e){ records = []; }
+}
+function saveRecords(){
+  localStorage.setItem(REC_KEY, JSON.stringify(records));
+}
+function defaultSettings(){
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth()+1;
+  if(m >= 8){
+    return { termName:`${y}-${y+1}学年 第一学期`, termStart:`${y}-09-01`, termEnd:`${y+1}-01-31` };
+  }
+  return { termName:`${y-1}-${y}学年 第二学期`, termStart:`${y}-02-01`, termEnd:`${y}-07-31` };
+}
+function loadSettings(){
+  try{
+    settings = Object.assign(defaultSettings(), JSON.parse(localStorage.getItem(SET_KEY)) || {});
+  }catch(e){ settings = defaultSettings(); }
+}
+function saveSettings(){
+  localStorage.setItem(SET_KEY, JSON.stringify(settings));
+}
+
+/* =========================================================
+   统计卡
+   ========================================================= */
+function renderStats(){
+  const now = new Date();
+  const todayS = new Date(now.getFullYear(),now.getMonth(),now.getDate(),0,0,0);
+  const todayE = new Date(now.getFullYear(),now.getMonth(),now.getDate(),23,59,59);
+  const wS = weekStart(now), wE = weekEnd(now); wE.setHours(23,59,59);
+  const mS = new Date(now.getFullYear(),now.getMonth(),1);
+  const mE = new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59);
+  const tS = settings.termStart ? new Date(settings.termStart+'T00:00:00') : null;
+  const tE = settings.termEnd   ? new Date(settings.termEnd+'T23:59:59')   : null;
+
+  const cnt = (a,b) => records.filter(r=>{
+    const t = new Date(r.start);
+    if(isNaN(t)) return false;
+    if(a && t<a) return false;
+    if(b && t>b) return false;
+    return true;
+  }).length;
+
+  $('#statToday').textContent = cnt(todayS,todayE);
+  $('#statWeek').textContent  = cnt(wS,wE);
+  $('#statMonth').textContent = cnt(mS,mE);
+  $('#statTerm').textContent  = cnt(tS,tE);
+}
+
+/* =========================================================
+   学生选择器
+   ========================================================= */
+const searchInput = $('#studentSearch');
+const panel = $('#studentPanel');
+
+function renderStudentOptions(){
+  const kw = searchInput.value.trim().toLowerCase();
+  const list = STUDENTS.filter(s =>
+    !kw || s.name.toLowerCase().includes(kw) || s.no.includes(kw)
+  );
+  if(!list.length){
+    panel.innerHTML = '<div class="combo-empty">未找到匹配的学生</div>';
+    return;
+  }
+  panel.innerHTML = list.map(s =>
+    `<div class="combo-item" data-no="${s.no}">
+       <span class="c-no">${s.no}</span>
+       <span class="c-name">${esc(s.name)}</span>
+       <span class="c-gender ${s.gender==='男'?'m':'f'}">${s.gender}</span>
+     </div>`).join('');
+}
+function openPanel(){ renderStudentOptions(); panel.classList.add('open'); }
+function closePanel(){ panel.classList.remove('open'); }
+
+searchInput.addEventListener('focus', openPanel);
+searchInput.addEventListener('input', ()=>{ renderStudentOptions(); panel.classList.add('open'); });
+panel.addEventListener('mousedown', e=>{
+  const item = e.target.closest('.combo-item');
+  if(!item) return;
+  e.preventDefault();
+  selectStudent(item.dataset.no);
+});
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.combo')) closePanel();
+});
+searchInput.addEventListener('keydown', e=>{
+  if(e.key==='Enter'){
+    const first = panel.querySelector('.combo-item');
+    if(first){ e.preventDefault(); selectStudent(first.dataset.no); }
+  }
+});
+
+function selectStudent(no){
+  const s = STUDENTS.find(x=>x.no===no);
+  if(!s) return;
+  selectedStudent = s;
+  searchInput.value = `${s.no} ${s.name}`;
+  $('#chosenStudent').innerHTML =
+    `<span class="tag">已选：${s.no} ${esc(s.name)}（${s.gender}）</span>`;
+  closePanel();
+}
+
+/* =========================================================
+   表单提交
+   ========================================================= */
+function resetForm(){
+  editingId = null;
+  selectedStudent = null;
+  searchInput.value = '';
+  $('#chosenStudent').innerHTML = '';
+  $('#reason').value = '';
+  $('#picker').value = '';
+  $('#phone').value  = '';
+  $('#note').value   = '';
+  $('#startTime').value = nowLocal();
+  $('#endTime').value   = '';
+  document.querySelector('input[name=ltype][value=病假]').checked = true;
+  $('#formTitle').textContent = '新增请假登记';
+  $('#btnSave').textContent = '保存登记';
+}
+
+$('#btnReset').addEventListener('click', resetForm);
+
+$('#btnSave').addEventListener('click', ()=>{
+  const reason = $('#reason').value.trim();
+  const start  = $('#startTime').value;
+
+  if(!selectedStudent){ alert('请先选择学生'); searchInput.focus(); return; }
+  if(!reason){ alert('请填写请假事由'); $('#reason').focus(); return; }
+  if(!start){ alert('请选择请假开始时间'); $('#startTime').focus(); return; }
+
+  const end = $('#endTime').value;
+  if(end && new Date(end) <= new Date(start)){
+    alert('预计返校时间需晚于请假开始时间');
+    return;
+  }
+
+  const type = document.querySelector('input[name=ltype]:checked').value;
+
+  const data = {
+    no: selectedStudent.no,
+    name: selectedStudent.name,
+    gender: selectedStudent.gender,
+    type, reason,
+    start, end,
+    picker: $('#picker').value.trim(),
+    phone:  $('#phone').value.trim(),
+    note:   $('#note').value.trim()
+  };
+
+  if(editingId){
+    const i = records.findIndex(r=>r.id===editingId);
+    if(i>-1) records[i] = Object.assign(records[i], data);
+  }else{
+    records.push(Object.assign({ id: uid(), createdAt: nowLocal() }, data));
+  }
+
+  saveRecords();
+  resetForm();
+  renderStats();
+  renderPanel();
+});
+
+/* =========================================================
+   筛选
+   ========================================================= */
+function setPreset(p){
+  filter.preset = p;
+  const now = new Date();
+  if(p==='all'){ filter.start=''; filter.end=''; }
+  else if(p==='week'){
+    filter.start = fmtDate(weekStart(now));
+    filter.end   = fmtDate(weekEnd(now));
+  }else if(p==='month'){
+    filter.start = fmtDate(new Date(now.getFullYear(),now.getMonth(),1));
+    filter.end   = fmtDate(new Date(now.getFullYear(),now.getMonth()+1,0));
+  }else if(p==='term'){
+    filter.start = settings.termStart || '';
+    filter.end   = settings.termEnd   || '';
+  }
+  $('#fStart').value = filter.start;
+  $('#fEnd').value   = filter.end;
+  document.querySelectorAll('#presets button').forEach(b=>
+    b.classList.toggle('active', b.dataset.preset===p));
+  renderPanel();
+}
+
+document.querySelectorAll('#presets button').forEach(b=>{
+  b.addEventListener('click', ()=> setPreset(b.dataset.preset));
+});
+
+$('#fStart').addEventListener('change', e=>{
+  filter.start = e.target.value;
+  filter.preset = 'custom';
+  document.querySelectorAll('#presets button').forEach(b=>b.classList.remove('active'));
+  renderPanel();
+});
+$('#fEnd').addEventListener('change', e=>{
+  filter.end = e.target.value;
+  filter.preset = 'custom';
+  document.querySelectorAll('#presets button').forEach(b=>b.classList.remove('active'));
+  renderPanel();
+});
+let kwTimer = null;
+$('#fKeyword').addEventListener('input', e=>{
+  clearTimeout(kwTimer);
+  kwTimer = setTimeout(()=>{
+    filter.keyword = e.target.value.trim();
+    renderPanel();
+  }, 180);
+});
+$('#btnClearFilter').addEventListener('click', ()=>{
+  filter = { start:'', end:'', keyword:'', preset:'all' };
+  $('#fStart').value=''; $('#fEnd').value=''; $('#fKeyword').value='';
+  document.querySelectorAll('#presets button').forEach(b=>
+    b.classList.toggle('active', b.dataset.preset==='all'));
+  renderPanel();
+});
+
+function getFiltered(){
+  let list = records.slice();
+  if(filter.start){
+    const s = new Date(filter.start+'T00:00:00');
+    list = list.filter(r=> new Date(r.start) >= s);
+  }
+  if(filter.end){
+    const e = new Date(filter.end+'T23:59:59');
+    list = list.filter(r=> new Date(r.start) <= e);
+  }
+  if(filter.keyword){
+    const k = filter.keyword.toLowerCase();
+    list = list.filter(r =>
+      r.name.toLowerCase().includes(k) ||
+      (r.reason||'').toLowerCase().includes(k) ||
+      (r.picker||'').toLowerCase().includes(k) ||
+      r.no.includes(k));
+  }
+  list.sort((a,b)=> new Date(b.start) - new Date(a.start));
+  return list;
+}
+
+/* =========================================================
+   标签页
+   ========================================================= */
+document.querySelectorAll('.tab').forEach(t=>{
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    activeTab = t.dataset.tab;
+    renderPanel();
+  });
+});
+
+/* =========================================================
+   面板渲染
+   ========================================================= */
+function emptyHTML(msg){
+  return `<div class="empty"><div class="ico">🗂️</div><div>${msg}</div></div>`;
+}
+
+function renderPanel(){
+  const list = getFiltered();
+  const el = $('#panel');
+
+  if(activeTab==='detail')       el.innerHTML = detailHTML(list);
+  else if(activeTab==='student') el.innerHTML = studentHTML(list);
+  else if(activeTab==='week')    el.innerHTML = weekHTML(list);
+  else if(activeTab==='month')   el.innerHTML = monthHTML(list);
+  else if(activeTab==='term')    el.innerHTML = termHTML(list);
+}
+
+/* ---------- 明细 ---------- */
+function detailHTML(list){
+  if(!list.length) return emptyHTML('当前筛选条件下暂无请假记录');
+
+  const rows = list.map(r=>`
+    <tr>
+      <td>${r.no}</td>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td><span class="badge ${esc(r.type)}">${esc(r.type)}</span></td>
+      <td class="reason-cell">${esc(r.reason)}
+        ${r.note?`<div class="note">备注：${esc(r.note)}</div>`:''}
+      </td>
+      <td>${fmtDT(r.start)}</td>
+      <td>${r.end ? fmtDT(r.end) : '<span class="muted">—</span>'}</td>
+      <td>${durText(r)}</td>
+      <td>${r.picker ? esc(r.picker) : '<span class="muted">—</span>'}
+        ${r.phone?`<div class="note">${esc(r.phone)}</div>`:''}
+      </td>
+      <td class="ops">
+        <button class="mini" data-act="edit" data-id="${r.id}">编辑</button>
+        <button class="mini danger" data-act="del" data-id="${r.id}">删除</button>
+      </td>
+    </tr>`).join('');
+
+  return `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>学号</th><th>姓名</th><th>类型</th><th>请假事由</th>
+      <th>请假时间</th><th>预计返校</th><th>时长</th><th>来接的人 / 电话</th><th>操作</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr>
+      <td colspan="8">共 ${list.length} 条记录　|　累计请假时长：${sumHours(list)}</td>
+      <td></td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+/* ---------- 按学生 ---------- */
+function studentHTML(list){
+  if(!list.length) return emptyHTML('当前筛选条件下暂无数据');
+
+  const map = new Map();
+  list.forEach(r=>{
+    if(!map.has(r.no)){
+      map.set(r.no,{ no:r.no, name:r.name, count:0, sick:0, personal:0, other:0, hours:0, last:'' });
+    }
+    const o = map.get(r.no);
+    o.count++;
+    if(r.type==='病假') o.sick++;
+    else if(r.type==='事假') o.personal++;
+    else o.other++;
+    o.hours += durHours(r);
+    if(!o.last || new Date(r.start) > new Date(o.last)) o.last = r.start;
+  });
+
+  const rows = [...map.values()].sort((a,b)=> a.no.localeCompare(b.no));
+
+  const body = rows.map(o=>`
+    <tr>
+      <td>${o.no}</td>
+      <td><strong>${esc(o.name)}</strong></td>
+      <td>${o.count}</td>
+      <td>${o.sick||'<span class="muted">0</span>'}</td>
+      <td>${o.personal||'<span class="muted">0</span>'}</td>
+      <td>${o.other||'<span class="muted">0</span>'}</td>
+      <td>${o.hours>0 ? o.hours.toFixed(1)+' 小时' : '<span class="muted">—</span>'}</td>
+      <td>${fmtDT(o.last)}</td>
+    </tr>`).join('');
+
+  const totalH = rows.reduce((s,o)=>s+o.hours,0);
+
+  return `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>学号</th><th>姓名</th><th>请假人次</th><th>病假</th><th>事假</th><th>其他</th>
+      <th>累计时长</th><th>最近一次请假</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr>
+      <td colspan="2">合计（${rows.length} 人）</td>
+      <td>${rows.reduce((s,o)=>s+o.count,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.sick,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.personal,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.other,0)}</td>
+      <td>${totalH.toFixed(1)} 小时</td>
+      <td></td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+/* ---------- 按周 ---------- */
+function weekHTML(list){
+  if(!list.length) return emptyHTML('当前筛选条件下暂无数据');
+
+  const map = new Map();
+  list.forEach(r=>{
+    const ws = weekStart(new Date(r.start));
+    const key = fmtDate(ws);
+    if(!map.has(key)){
+      map.set(key,{ key, start:new Date(ws), count:0, hours:0, students:new Set(), sick:0, personal:0, other:0 });
+    }
+    const o = map.get(key);
+    o.count++;
+    o.hours += durHours(r);
+    o.students.add(r.name);
+    if(r.type==='病假') o.sick++; else if(r.type==='事假') o.personal++; else o.other++;
+  });
+
+  const rows = [...map.values()].sort((a,b)=> b.key.localeCompare(a.key));
+
+  const body = rows.map(o=>{
+    const we = new Date(o.start); we.setDate(we.getDate()+6);
+    const range = `${pad(o.start.getMonth()+1)}-${pad(o.start.getDate())} ~ ${pad(we.getMonth()+1)}-${pad(we.getDate())}`;
+    return `<tr>
+      <td><strong>第 ${isoWeek(o.start)} 周</strong></td>
+      <td>${range}</td>
+      <td>${o.count}</td>
+      <td>${o.students.size}</td>
+      <td>${o.sick}</td><td>${o.personal}</td><td>${o.other}</td>
+      <td>${o.hours.toFixed(1)} 小时</td>
+      <td class="reason-cell">${esc([...o.students].join('、'))}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>周次</th><th>日期范围</th><th>请假人次</th><th>涉及人数</th>
+      <th>病假</th><th>事假</th><th>其他</th><th>累计时长</th><th>涉及学生</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr>
+      <td colspan="2">合计</td>
+      <td>${rows.reduce((s,o)=>s+o.count,0)}</td>
+      <td>${new Set(list.map(r=>r.name)).size}</td>
+      <td>${rows.reduce((s,o)=>s+o.sick,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.personal,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.other,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.hours,0).toFixed(1)} 小时</td>
+      <td></td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+/* ---------- 按月 ---------- */
+function monthHTML(list){
+  if(!list.length) return emptyHTML('当前筛选条件下暂无数据');
+
+  const map = new Map();
+  list.forEach(r=>{
+    const d = new Date(r.start);
+    const key = d.getFullYear()+'-'+pad(d.getMonth()+1);
+    if(!map.has(key)){
+      map.set(key,{ key, count:0, hours:0, students:new Set(), sick:0, personal:0, other:0 });
+    }
+    const o = map.get(key);
+    o.count++;
+    o.hours += durHours(r);
+    o.students.add(r.name);
+    if(r.type==='病假') o.sick++; else if(r.type==='事假') o.personal++; else o.other++;
+  });
+
+  const rows = [...map.values()].sort((a,b)=> b.key.localeCompare(a.key));
+
+  const body = rows.map(o=>{
+    const [y,m] = o.key.split('-');
+    const days = new Date(+y, +m, 0).getDate();
+    return `<tr>
+      <td><strong>${y} 年 ${+m} 月</strong></td>
+      <td>${y}-${m}-01 ~ ${y}-${m}-${pad(days)}</td>
+      <td>${o.count}</td>
+      <td>${o.students.size}</td>
+      <td>${o.sick}</td><td>${o.personal}</td><td>${o.other}</td>
+      <td>${o.hours.toFixed(1)} 小时</td>
+      <td class="reason-cell">${esc([...o.students].join('、'))}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="table-wrap"><table>
+    <thead><tr>
+      <th>月份</th><th>日期范围</th><th>请假人次</th><th>涉及人数</th>
+      <th>病假</th><th>事假</th><th>其他</th><th>累计时长</th><th>涉及学生</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr>
+      <td colspan="2">合计</td>
+      <td>${rows.reduce((s,o)=>s+o.count,0)}</td>
+      <td>${new Set(list.map(r=>r.name)).size}</td>
+      <td>${rows.reduce((s,o)=>s+o.sick,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.personal,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.other,0)}</td>
+      <td>${rows.reduce((s,o)=>s+o.hours,0).toFixed(1)} 小时</td>
+      <td></td>
+    </tr></tfoot>
+  </table></div>`;
+}
+
+/* ---------- 按学期 ---------- */
+function termHTML(list){
+  const name = settings.termName || '本学期';
+  const range = (settings.termStart||'?') + ' ~ ' + (settings.termEnd||'?');
+
+  const inTerm = records.filter(r=>{
+    const t = new Date(r.start);
+    if(settings.termStart && t < new Date(settings.termStart+'T00:00:00')) return false;
+    if(settings.termEnd   && t > new Date(settings.termEnd+'T23:59:59'))   return false;
+    return true;
+  });
+
+  const src = filter.start||filter.end||filter.keyword ? list : inTerm;
+
+  if(!src.length){
+    return emptyHTML(`「${esc(name)}」暂无请假记录`);
+  }
+
+  const students = new Set(src.map(r=>r.name));
+  const sick = src.filter(r=>r.type==='病假').length;
+  const personal = src.filter(r=>r.type==='事假').length;
+  const other = src.filter(r=>r.type==='其他').length;
+  const hours = src.reduce((s,r)=>s+durHours(r),0);
+
+  const body = src
+    .slice()
+    .sort((a,b)=> new Date(b.start)-new Date(a.start))
+    .map(r=>`<tr>
+      <td>${r.no}</td>
+      <td><strong>${esc(r.name)}</strong></td>
+      <td><span class="badge ${esc(r.type)}">${esc(r.type)}</span></td>
+      <td class="reason-cell">${esc(r.reason)}</td>
+      <td>${fmtDT(r.start)}</td>
+      <td>${r.end?fmtDT(r.end):'<span class="muted">—</span>'}</td>
+      <td>${r.picker?esc(r.picker):'<span class="muted">—</span>'}</td>
+    </tr>`).join('');
+
+  return `
+    <div class="table-wrap" style="margin-bottom:14px">
+      <table>
+        <thead><tr><th>学期</th><th>起止日期</th><th>请假人次</th><th>涉及人数</th>
+        <th>病假</th><th>事假</th><th>其他</th><th>累计时长</th></tr></thead>
+        <tbody><tr>
+          <td><strong>${esc(name)}</strong></td>
+          <td>${esc(range)}</td>
+          <td>${src.length}</td>
+          <td>${students.size}</td>
+          <td>${sick}</td><td>${personal}</td><td>${other}</td>
+          <td>${hours.toFixed(1)} 小时</td>
+        </tr></tbody>
+      </table>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>学号</th><th>姓名</th><th>类型</th><th>事由</th>
+        <th>请假时间</th><th>预计返校</th><th>来接的人</th>
+      </tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`;
+}
+
+/* =========================================================
+   面板内操作（编辑 / 删除）
+   ========================================================= */
+$('#panel').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-act]');
+  if(!btn) return;
+  const id = btn.dataset.id;
+  const rec = records.find(r=>r.id===id);
+  if(!rec) return;
+
+  if(btn.dataset.act === 'del'){
+    if(confirm(`确定删除「${rec.name}」的这条请假记录吗？`)){
+      records = records.filter(r=>r.id!==id);
+      saveRecords();
+      renderStats();
+      renderPanel();
+    }
+    return;
+  }
+
+  if(btn.dataset.act === 'edit'){
+    editingId = id;
+    const s = STUDENTS.find(x=>x.no===rec.no) || { no:rec.no, name:rec.name, gender:rec.gender||'' };
+    selectedStudent = s;
+    searchInput.value = `${s.no} ${s.name}`;
+    $('#chosenStudent').innerHTML = `<span class="tag">已选：${s.no} ${esc(s.name)}（${s.gender||''}）</span>`;
+    $('#reason').value = rec.reason || '';
+    $('#startTime').value = rec.start || '';
+    $('#endTime').value = rec.end || '';
+    $('#picker').value = rec.picker || '';
+    $('#phone').value = rec.phone || '';
+    $('#note').value = rec.note || '';
+    const radio = document.querySelector(`input[name=ltype][value="${rec.type}"]`);
+    if(radio) radio.checked = true;
+    $('#formTitle').textContent = '编辑请假登记';
+    $('#btnSave').textContent = '更新登记';
+    window.scrollTo({ top:0, behavior:'smooth' });
+  }
+});
+
+/* =========================================================
+   导出 CSV
+   ========================================================= */
+$('#btnExport').addEventListener('click', ()=>{
+  const list = getFiltered();
+  if(!list.length){ alert('当前没有可导出的记录'); return; }
+
+  const head = ['学号','姓名','性别','类型','请假事由','请假开始时间','预计返校时间',
+                '时长(小时)','来接的人','联系电话','备注','登记时间'];
+  const rows = list.map(r=>[
+    r.no, r.name, r.gender||'', r.type, r.reason,
+    fmtDT(r.start), r.end?fmtDT(r.end):'',
+    durHours(r).toFixed(2), r.picker||'', r.phone||'', r.note||'', fmtDT(r.createdAt||'')
+  ]);
+
+  const csv = '\ufeff' + [head, ...rows]
+    .map(row => row.map(c => `"${String(c??'').replace(/"/g,'""')}"`).join(','))
+    .join('\r\n');
+
+  const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `03班请假记录_${fmtDate(new Date())}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+});
+
+/* =========================================================
+   打印
+   ========================================================= */
+$('#btnPrint').addEventListener('click', ()=> window.print());
+
+/* =========================================================
+   学期设置
+   ========================================================= */
+$('#btnSettings').addEventListener('click', ()=>{
+  $('#setTermName').value  = settings.termName || '';
+  $('#setTermStart').value = settings.termStart || '';
+  $('#setTermEnd').value   = settings.termEnd || '';
+  $('#settingsMask').classList.add('open');
+});
+$('#btnCloseSettings').addEventListener('click', ()=>{
+  $('#settingsMask').classList.remove('open');
+});
+$('#settingsMask').addEventListener('click', e=>{
+  if(e.target === $('#settingsMask')) $('#settingsMask').classList.remove('open');
+});
+$('#btnSaveSettings').addEventListener('click', ()=>{
+  settings.termName  = $('#setTermName').value.trim() || '本学期';
+  settings.termStart = $('#setTermStart').value;
+  settings.termEnd   = $('#setTermEnd').value;
+  saveSettings();
+  $('#settingsMask').classList.remove('open');
+  renderStats();
+  renderPanel();
+});
+
+/* =========================================================
+   初始化
+   ========================================================= */
+(function init(){
+  loadSettings();
+  loadRecords();
+  $('#startTime').value = nowLocal();
+  renderStats();
+  renderPanel();
+})();
+</script>
+</body>
+</html>
